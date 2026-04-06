@@ -157,7 +157,7 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#DBE2E9] p-4 font-sans">
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#DBE2E9] p-4 font-sans" style={{ zoom: '90%' }}>
         {/* Logo Container */}
         <div className="mb-8 flex flex-col items-center">
           <div className="w-24 h-24 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden mb-6">
