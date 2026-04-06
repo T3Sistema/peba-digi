@@ -1,0 +1,5 @@
+{
+  "name": "NOD Apresentação",
+  "description": "A full-screen viewer for Genially content with Supabase authentication.",
+  "requestFramePermissions": []
+}
