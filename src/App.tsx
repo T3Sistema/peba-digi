@@ -1,11 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet } from 'lucide-react';
 
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+
+type ViewKey = 'apresentacao' | 'financas';
+
+// Chaves correspondentes na tabela `app_settings` do Supabase
+const IFRAME_KEYS = {
+  apresentacao: 'iframe_url',
+  financas: 'Finanças',
+} as const;
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -16,6 +24,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+  const [financasUrl, setFinancasUrl] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<ViewKey>('apresentacao');
   
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -65,19 +75,22 @@ export default function App() {
         resetInactivityTimer();
       }
 
-      // 2. Buscar configuração do iframe
+      // 2. Buscar configuração dos iframes (Apresentação e Finanças)
       try {
         const { data } = await supabase
           .from('app_settings')
-          .select('value')
-          .eq('key', 'iframe_url')
-          .single();
-        
+          .select('key, value')
+          .in('key', [IFRAME_KEYS.apresentacao, IFRAME_KEYS.financas]);
+
         if (data) {
-          setIframeUrl(data.value);
+          const apresentacao = data.find((row: any) => row.key === IFRAME_KEYS.apresentacao);
+          const financas = data.find((row: any) => row.key === IFRAME_KEYS.financas);
+
+          if (apresentacao) setIframeUrl(apresentacao.value);
+          if (financas) setFinancasUrl(financas.value);
         }
       } catch (err) {
-        console.error('Erro ao buscar URL do iframe:', err);
+        console.error('Erro ao buscar URLs dos iframes:', err);
       } finally {
         // 3. Finalizar carregamento inicial
         setIsCheckingAuth(false);
@@ -112,7 +125,7 @@ export default function App() {
       const timeoutId = setTimeout(focusIframe, 500);
       return () => clearTimeout(timeoutId);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeView]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,10 +257,12 @@ export default function App() {
     );
   }
 
+  const activeUrl = activeView === 'financas' ? financasUrl : iframeUrl;
+
   return (
     <div className="fixed inset-0 flex flex-col w-full h-full overflow-hidden bg-black">
       {/* Header Bar */}
-      <div className="h-16 bg-[#0B0E14] flex items-center px-6 border-b border-white/5 z-[10000] shrink-0">
+      <div className="h-16 bg-[#0B0E14] flex items-center gap-3 px-6 border-b border-white/5 z-[10000] shrink-0">
         {/* Left: Voltar */}
         <button 
           onClick={logout}
@@ -255,6 +270,30 @@ export default function App() {
         >
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
+
+        {/* Right: Alternar entre Apresentação e Finanças */}
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setActiveView('apresentacao')}
+            className={`flex items-center gap-2 px-4 py-1.5 border rounded-lg text-sm transition-colors ${
+              activeView === 'apresentacao'
+                ? 'bg-white text-[#0B0E14] border-white font-semibold'
+                : 'border-white/20 text-white hover:bg-white/10'
+            }`}
+          >
+            <Presentation className="w-4 h-4" /> Apresentação
+          </button>
+          <button
+            onClick={() => setActiveView('financas')}
+            className={`flex items-center gap-2 px-4 py-1.5 border rounded-lg text-sm transition-colors ${
+              activeView === 'financas'
+                ? 'bg-white text-[#0B0E14] border-white font-semibold'
+                : 'border-white/20 text-white hover:bg-white/10'
+            }`}
+          >
+            <Wallet className="w-4 h-4" /> Finanças
+          </button>
+        </div>
       </div>
 
       {/* Content Area */}
@@ -263,14 +302,15 @@ export default function App() {
         onClick={handleContainerClick}
       >
         <div className="iframe-render-area h-full">
-          {iframeUrl ? (
+          {activeUrl ? (
             <iframe
+              key={activeView}
               ref={iframeRef}
-              src={iframeUrl}
+              src={activeUrl}
               className="tool-iframe"
               allowFullScreen
               allow="autoplay; fullscreen; clipboard-write"
-              title="Genially Content"
+              title={activeView === 'financas' ? 'Finanças' : 'Genially Content'}
               tabIndex={0}
             />
           ) : (
