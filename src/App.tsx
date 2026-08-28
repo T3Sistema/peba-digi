@@ -318,7 +318,7 @@ export default function App() {
               <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           )}
-          <div className="logo-overlay"></div>
+          <div className={`logo-overlay ${activeView === 'financas' ? 'logo-overlay--right' : ''}`}></div>
         </div>
       </div>
     </div>

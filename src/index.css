@@ -11,6 +11,12 @@
     z-index: 9999; /* Garante que fique na frente do iframe */
 }
 
+/* Em "Finanças" a faixa fica no canto inferior direito */
+.logo-overlay--right {
+    left: auto;
+    right: 0;
+}
+
 /* O container do iframe precisa ser relativo para a faixa se posicionar nele */
 .iframe-render-area {
     position: relative;
