@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import BlockedScreen from './BlockedScreen';
 import { useAntiInspect } from './useAntiInspect';
-import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard } from 'lucide-react';
+import { useAccessGate } from './useAccessGate';
+import SettingsModal from './SettingsModal';
+import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard, Settings } from 'lucide-react';
 
 /**
  * @license
@@ -61,6 +63,11 @@ export default function App() {
   const [urls, setUrls] = useState<Partial<Record<ViewKey, string>>>({});
   const [activeView, setActiveView] = useState<ViewKey>('apresentacao');
   
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Só mostra o sistema no caminho de entrada; o resto é redirecionado.
+  const gateStatus = useAccessGate();
+
   // Dissuasão contra inspeção (F12, botão direito, atalhos de DevTools).
   const isBlocked = useAntiInspect();
 
@@ -208,6 +215,12 @@ export default function App() {
     return <BlockedScreen />;
   }
 
+  // Tela neutra enquanto o destino é resolvido, para que o login não pisque
+  // para quem será redirecionado.
+  if (gateStatus !== 'allowed') {
+    return <div className="fixed inset-0 bg-[#08080c]" />;
+  }
+
   if (isCheckingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#DBE2E9]">
@@ -320,6 +333,15 @@ export default function App() {
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
 
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          aria-label="Configurações"
+          title="Configurações"
+          className="flex items-center justify-center w-9 h-9 border border-white/20 rounded-lg text-white hover:bg-white/10 transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+
         {/* Right: Alternar entre as views */}
         <div className="ml-auto flex items-center gap-2 overflow-x-auto">
           {VIEWS.map(({ key, label, icon: Icon }) => (
@@ -363,6 +385,8 @@ export default function App() {
           <div className={`logo-overlay ${activeConfig.overlay === 'right' ? 'logo-overlay--right' : ''}`}></div>
         </div>
       </div>
+
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </div>
   );
 }
