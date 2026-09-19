@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
+import BlockedScreen from './BlockedScreen';
+import { useAntiInspect } from './useAntiInspect';
 import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard } from 'lucide-react';
 
 /**
@@ -59,6 +61,9 @@ export default function App() {
   const [urls, setUrls] = useState<Partial<Record<ViewKey, string>>>({});
   const [activeView, setActiveView] = useState<ViewKey>('apresentacao');
   
+  // Dissuasão contra inspeção (F12, botão direito, atalhos de DevTools).
+  const isBlocked = useAntiInspect();
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -197,6 +202,11 @@ export default function App() {
       iframeRef.current.focus();
     }
   };
+
+  // Precede qualquer outra tela: cobre inclusive os iframes já carregados.
+  if (isBlocked) {
+    return <BlockedScreen />;
+  }
 
   if (isCheckingAuth) {
     return (
