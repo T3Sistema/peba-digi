@@ -11,6 +11,16 @@
     z-index: 9999; /* Garante que fique na frente do iframe */
 }
 
+/* Em "Finanças" a faixa fica no canto inferior direito, branca,
+   um pouco mais larga e mais baixa */
+.logo-overlay--right {
+    left: auto;
+    right: 0;
+    width: 210px;  /* Largura ajustada (+30px) */
+    height: 56px;  /* Altura ajustada (-16px) */
+    background: white;
+}
+
 /* O container do iframe precisa ser relativo para a faixa se posicionar nele */
 .iframe-render-area {
     position: relative;
