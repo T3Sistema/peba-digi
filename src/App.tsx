@@ -181,8 +181,8 @@ export default function App() {
               referrerPolicy="no-referrer"
             />
           </div>
-          <h1 className="text-4xl font-bold text-[#1A2B3C] mb-1">NOD</h1>
-          <p className="text-xl font-medium text-black">Apresentação</p>
+          <h1 className="text-4xl font-bold text-[#1A2B3C] mb-1">Parauapebas</h1>
+          <p className="text-xl font-medium text-black">Digital</p>
         </div>
 
         {/* Login Card */}
