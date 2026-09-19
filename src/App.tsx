@@ -1,19 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet } from 'lucide-react';
+import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard } from 'lucide-react';
 
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-type ViewKey = 'apresentacao' | 'financas';
+type ViewKey = 'apresentacao' | 'financas' | 'governabilidade';
 
-// Chaves correspondentes na tabela `app_settings` do Supabase
-const IFRAME_KEYS = {
-  apresentacao: 'iframe_url',
-  financas: 'Finanças',
-} as const;
+/**
+ * Cada view corresponde a uma linha da tabela `app_settings` do Supabase,
+ * onde `settingsKey` é o valor da coluna `key` e a URL do iframe vem da
+ * coluna `value`.
+ *
+ * `overlay` define de que lado fica a faixa que cobre a marca d'água do
+ * serviço embutido: o Genially assina no canto inferior esquerdo e o
+ * Looker Studio no inferior direito.
+ */
+const VIEWS = [
+  {
+    key: 'apresentacao',
+    label: 'Apresentação',
+    settingsKey: 'iframe_url',
+    icon: Presentation,
+    overlay: 'left',
+  },
+  {
+    key: 'financas',
+    label: 'Finanças',
+    settingsKey: 'Finanças',
+    icon: Wallet,
+    overlay: 'right',
+  },
+  {
+    key: 'governabilidade',
+    label: 'Painel de Governabilidade',
+    settingsKey: 'Painel de Governabilidade',
+    icon: LayoutDashboard,
+    overlay: 'right',
+  },
+] as const satisfies readonly {
+  key: ViewKey;
+  label: string;
+  settingsKey: string;
+  icon: typeof Presentation;
+  overlay: 'left' | 'right';
+}[];
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -23,8 +56,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
-  const [financasUrl, setFinancasUrl] = useState<string | null>(null);
+  const [urls, setUrls] = useState<Partial<Record<ViewKey, string>>>({});
   const [activeView, setActiveView] = useState<ViewKey>('apresentacao');
   
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -75,19 +107,25 @@ export default function App() {
         resetInactivityTimer();
       }
 
-      // 2. Buscar configuração dos iframes (Apresentação e Finanças)
+      // 2. Buscar a configuração de iframe de todas as views
       try {
         const { data } = await supabase
           .from('app_settings')
           .select('key, value')
-          .in('key', [IFRAME_KEYS.apresentacao, IFRAME_KEYS.financas]);
+          .in('key', VIEWS.map((view) => view.settingsKey));
 
         if (data) {
-          const apresentacao = data.find((row: any) => row.key === IFRAME_KEYS.apresentacao);
-          const financas = data.find((row: any) => row.key === IFRAME_KEYS.financas);
+          const byKey = new Map<string, string>(
+            data.map((row: any) => [row.key, row.value])
+          );
 
-          if (apresentacao) setIframeUrl(apresentacao.value);
-          if (financas) setFinancasUrl(financas.value);
+          setUrls(
+            Object.fromEntries(
+              VIEWS
+                .map((view) => [view.key, byKey.get(view.settingsKey)])
+                .filter(([, value]) => Boolean(value))
+            )
+          );
         }
       } catch (err) {
         console.error('Erro ao buscar URLs dos iframes:', err);
@@ -257,7 +295,8 @@ export default function App() {
     );
   }
 
-  const activeUrl = activeView === 'financas' ? financasUrl : iframeUrl;
+  const activeConfig = VIEWS.find((view) => view.key === activeView)!;
+  const activeUrl = urls[activeView];
 
   return (
     <div className="fixed inset-0 flex flex-col w-full h-full overflow-hidden bg-black">
@@ -271,28 +310,21 @@ export default function App() {
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
 
-        {/* Right: Alternar entre Apresentação e Finanças */}
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => setActiveView('apresentacao')}
-            className={`flex items-center gap-2 px-4 py-1.5 border rounded-lg text-sm transition-colors ${
-              activeView === 'apresentacao'
-                ? 'bg-white text-[#0B0E14] border-white font-semibold'
-                : 'border-white/20 text-white hover:bg-white/10'
-            }`}
-          >
-            <Presentation className="w-4 h-4" /> Apresentação
-          </button>
-          <button
-            onClick={() => setActiveView('financas')}
-            className={`flex items-center gap-2 px-4 py-1.5 border rounded-lg text-sm transition-colors ${
-              activeView === 'financas'
-                ? 'bg-white text-[#0B0E14] border-white font-semibold'
-                : 'border-white/20 text-white hover:bg-white/10'
-            }`}
-          >
-            <Wallet className="w-4 h-4" /> Finanças
-          </button>
+        {/* Right: Alternar entre as views */}
+        <div className="ml-auto flex items-center gap-2 overflow-x-auto">
+          {VIEWS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveView(key)}
+              className={`flex shrink-0 items-center gap-2 px-4 py-1.5 border rounded-lg text-sm whitespace-nowrap transition-colors ${
+                activeView === key
+                  ? 'bg-white text-[#0B0E14] border-white font-semibold'
+                  : 'border-white/20 text-white hover:bg-white/10'
+              }`}
+            >
+              <Icon className="w-4 h-4" /> {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -310,7 +342,7 @@ export default function App() {
               className="tool-iframe"
               allowFullScreen
               allow="autoplay; fullscreen; clipboard-write"
-              title={activeView === 'financas' ? 'Finanças' : 'Genially Content'}
+              title={activeConfig.label}
               tabIndex={0}
             />
           ) : (
@@ -318,7 +350,7 @@ export default function App() {
               <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           )}
-          <div className={`logo-overlay ${activeView === 'financas' ? 'logo-overlay--right' : ''}`}></div>
+          <div className={`logo-overlay ${activeConfig.overlay === 'right' ? 'logo-overlay--right' : ''}`}></div>
         </div>
       </div>
     </div>
