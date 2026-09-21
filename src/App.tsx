@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard } from 'lucide-react';
+import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard, HeartPulse } from 'lucide-react';
 
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-type ViewKey = 'apresentacao' | 'financas' | 'governabilidade';
+type ViewKey = 'apresentacao' | 'governabilidade' | 'saude' | 'financas';
 
 /**
  * Cada view corresponde a uma linha da tabela `app_settings` do Supabase,
@@ -27,17 +27,24 @@ const VIEWS = [
     overlay: 'left',
   },
   {
-    key: 'financas',
-    label: 'Finanças',
-    settingsKey: 'Finanças',
-    icon: Wallet,
-    overlay: 'right',
-  },
-  {
     key: 'governabilidade',
     label: 'Painel de Governabilidade',
     settingsKey: 'Painel de Governabilidade',
     icon: LayoutDashboard,
+    overlay: 'right',
+  },
+  {
+    key: 'saude',
+    label: 'Saúde',
+    settingsKey: 'Saúde',
+    icon: HeartPulse,
+    overlay: 'right',
+  },
+  {
+    key: 'financas',
+    label: 'Finanças',
+    settingsKey: 'Finanças',
+    icon: Wallet,
     overlay: 'right',
   },
 ] as const satisfies readonly {
