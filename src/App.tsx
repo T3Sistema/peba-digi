@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard, HeartPulse } from 'lucide-react';
+import { Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Presentation, Wallet, LayoutDashboard, HeartPulse, Truck, Building2 } from 'lucide-react';
 
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-type ViewKey = 'apresentacao' | 'governabilidade' | 'saude' | 'financas';
+type ViewKey = 'apresentacao' | 'governabilidade' | 'saude' | 'frota' | 'imoveis' | 'financas';
 
 /**
  * Cada view corresponde a uma linha da tabela `app_settings` do Supabase,
@@ -41,6 +41,20 @@ const VIEWS = [
     overlay: 'right',
   },
   {
+    key: 'frota',
+    label: 'Frota de Veículos',
+    settingsKey: 'Frota de Veículos',
+    icon: Truck,
+    overlay: 'right',
+  },
+  {
+    key: 'imoveis',
+    label: 'Locação de Imóveis',
+    settingsKey: 'Locação de Imóveis',
+    icon: Building2,
+    overlay: 'right',
+  },
+  {
     key: 'financas',
     label: 'Finanças',
     settingsKey: 'Finanças',
@@ -54,6 +68,18 @@ const VIEWS = [
   icon: typeof Presentation;
   overlay: 'left' | 'right';
 }[];
+
+/**
+ * A coluna `key` do Supabase é preenchida à mão, então a comparação ignora
+ * caixa, acentos e espaços extras: 'LOCAÇÃO DE IMÓVEIS' casa com
+ * 'Locação de Imóveis'.
+ */
+const normalizeKey = (key: string) =>
+  key
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -118,18 +144,17 @@ export default function App() {
       try {
         const { data } = await supabase
           .from('app_settings')
-          .select('key, value')
-          .in('key', VIEWS.map((view) => view.settingsKey));
+          .select('key, value');
 
         if (data) {
           const byKey = new Map<string, string>(
-            data.map((row: any) => [row.key, row.value])
+            data.map((row: any) => [normalizeKey(row.key), row.value])
           );
 
           setUrls(
             Object.fromEntries(
               VIEWS
-                .map((view) => [view.key, byKey.get(view.settingsKey)])
+                .map((view) => [view.key, byKey.get(normalizeKey(view.settingsKey))])
                 .filter(([, value]) => Boolean(value))
             )
           );
